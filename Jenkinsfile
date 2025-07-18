@@ -16,10 +16,21 @@ pipeline {
             }
         }
 
+        stage('Debug') {
+            steps {
+                sh 'echo PATH=$PATH'
+                sh 'ls -la'
+                sh 'pwd'
+            }
+        }
+
         stage('Build') {
             steps {
                 echo "Building the application..."
-                sh './gradlew build'
+                sh '''
+                    chmod +x gradlew
+                    ./gradlew build
+                '''
             }
         }
 
@@ -60,10 +71,10 @@ pipeline {
             steps {
                 echo "Pushing Docker image to registry..."
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
+                    sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push ${DOCKER_IMAGE}
-                    """
+                    '''
                 }
             }
         }
@@ -82,7 +93,6 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed. Sending notifications...'
-            // emailext or slackSend
         }
         always {
             cleanWs()
