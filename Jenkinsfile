@@ -11,39 +11,36 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo "Checking out source code..."
-                git url: 'https://github.com/your-org/your-repo.git', branch: 'main'
+                echo "🔁 Checking out source code..."
+                git credentialsId: 'github-creds', url: 'https://github.com/your-org/your-repo.git', branch: 'main'
             }
         }
 
-        stage('Debug') {
+        stage('Prepare') {
             steps {
-                sh 'echo PATH=$PATH'
-                sh 'ls -la'
-                sh 'pwd'
+                echo "🛠️ Preparing build environment..."
+                sh 'chmod +x gradlew || true'    // Don't fail if already executable
+                sh 'ls -la'                      // Debug: see if gradlew exists
             }
         }
 
         stage('Build') {
             steps {
-                echo "Building the application..."
-                sh '''
-                    chmod +x gradlew
-                    ./gradlew build
-                '''
+                echo "🏗️ Building the application..."
+                sh './gradlew build'
             }
         }
 
         stage('Test') {
             steps {
-                echo "Running tests..."
+                echo "🧪 Running tests..."
                 sh './gradlew test'
             }
         }
 
         stage('Code Quality') {
             steps {
-                echo "Running SonarQube analysis..."
+                echo "🔍 Running SonarQube analysis..."
                 withSonarQubeEnv('SonarQubeServer') {
                     sh './gradlew sonarqube'
                 }
@@ -52,14 +49,14 @@ pipeline {
 
         stage('Package') {
             steps {
-                echo "Packaging application..."
+                echo "📦 Packaging application..."
                 archiveArtifacts artifacts: '**/build/libs/*.jar', fingerprint: true
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "Building Docker image..."
+                echo "🐳 Building Docker image..."
                 sh "docker build -t ${DOCKER_IMAGE} ."
             }
         }
@@ -69,7 +66,7 @@ pipeline {
                 branch 'main'
             }
             steps {
-                echo "Pushing Docker image to registry..."
+                echo "📤 Pushing Docker image to registry..."
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
@@ -81,7 +78,8 @@ pipeline {
 
         stage('Deploy to Dev') {
             steps {
-                echo "Deploying to Dev environment..."
+                echo "🚀 Deploying to Dev environment..."
+                // Uncomment below when ready
                 // sh 'kubectl apply -f k8s/dev-deployment.yaml'
             }
         }
@@ -89,12 +87,14 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo '✅ Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed. Sending notifications...'
+            echo '❌ Pipeline failed. Sending notifications...'
+            // Add slackSend or emailext if needed
         }
         always {
+            echo '🧹 Cleaning workspace...'
             cleanWs()
         }
     }
