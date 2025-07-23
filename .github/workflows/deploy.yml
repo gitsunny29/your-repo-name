@@ -2,7 +2,7 @@ name: Build and Deploy to IIS
 
 on:
   push:
-    branches: [main]  # or use 'master' or 'develop'
+    branches: [main]
 
 jobs:
   build-and-deploy:
@@ -13,13 +13,13 @@ jobs:
       uses: actions/checkout@v3
 
     - name: 🔧 Restore dependencies
-      run: dotnet restore
+      run: dotnet restore MyWebApp.sln  # 👈 or path to .csproj if no .sln
 
     - name: 🛠️ Build the project
-      run: dotnet build --configuration Release
+      run: dotnet build MyWebApp.sln --configuration Release --no-restore
 
     - name: 📦 Publish the project
-      run: dotnet publish -c Release -o ./publish
+      run: dotnet publish MyWebApp/MyWebApp.csproj -c Release -o ./publish --no-build
 
     - name: 🚀 Deploy to IIS
       shell: powershell
