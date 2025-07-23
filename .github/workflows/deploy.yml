@@ -1,0 +1,31 @@
+name: Build and Deploy to IIS
+
+on:
+  push:
+    branches: [main]  # or use 'master' or 'develop'
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+    - name: ⬇ Checkout code
+      uses: actions/checkout@v3
+
+    - name: 🔧 Restore dependencies
+      run: dotnet restore
+
+    - name: 🛠️ Build the project
+      run: dotnet build --configuration Release
+
+    - name: 📦 Publish the project
+      run: dotnet publish -c Release -o ./publish
+
+    - name: 🚀 Deploy to IIS
+      shell: powershell
+      run: |
+        Import-Module WebAdministration
+        Stop-WebSite -Name "MyWebApp"
+        Remove-Item "C:\inetpub\wwwroot\MyWebApp\*" -Recurse -Force
+        Copy-Item ".\publish\*" "C:\inetpub\wwwroot\MyWebApp\" -Recurse -Force
+        Start-WebSite -Name "MyWebApp"
